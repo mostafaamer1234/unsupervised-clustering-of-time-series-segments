@@ -1,0 +1,98 @@
+Metadata-Version: 2.4
+Name: pulse-cluster
+Version: 1.0.0
+Summary: Time-Series Clustering and Segment Analysis on PulseDB Using Divide-and-Conquer Algorithms
+Author: PulseDB Analysis Team
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: matplotlib
+Requires-Dist: pandas
+Requires-Dist: pytest
+Dynamic: author
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# PulseDB Time-Series Clustering via Divide-and-Conquer
+
+This project implements **algorithmic** (non-ML) clustering and analysis of PulseDB 10-second physiological signal segments (ECG/PPG/ABP).  
+It uses a **divide-and-conquer** top-down clustering strategy, **closest-pair** search within clusters, and **Kadane’s algorithm** on each series to find the most active interval.
+
+## Key Features
+- Top-down **divide-and-conquer clustering** using correlation or DTW distance
+- **Closest pair** of time series within each cluster for cohesion checks and exemplars
+- **Kadane’s algorithm** on absolute first-difference to detect the most active sub-interval per segment
+- Modular Python package with clean classes and unit tests
+- Command-line interface + example driver
+- Plots and markdown/JSON reports
+
+## Flowchart
+```mermaid
+flowchart TD
+  A[Load segments] --> B[Preprocess (z-score, trim/align)]
+  B --> C{Divide & Conquer Split?}
+  C -->|dist metric| D[Choose pivot & compute distances]
+  D --> E[Median split -> left/right subsets]
+  E --> C
+  C -->|stop rule met| F[Cluster formed]
+  F --> G[Closest Pair per cluster]
+  B --> H[Kadane per segment]
+  G --> I[Reports & Visuals]
+  H --> I
+```
+
+## Installation
+```bash
+# (Optional) create a venv
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Data Format
+Place your PulseDB segments in `data/` as CSVs. Each CSV should contain **one column** named `value` (or no header) with uniformly sampled values for a single 10s segment.  
+Files may be nested in subfolders; the loader will recurse. Example:
+```
+data/
+  ABP_0001.csv
+  ECG_0234.csv
+  PPG_0456.csv
+```
+
+## Quick Start
+```bash
+# Run full pipeline on your data (or on a synthetic demo if no CSVs found)
+python examples/run_pipeline.py   --data_dir data   --out_dir reports   --metric correlation   --max_depth 6   --min_cluster_size 15   --dtw_window 0.1
+```
+
+Outputs:
+- `clusters.json`: cluster membership and per-cluster stats
+- `closest_pairs.json`: closest pairs and distances per cluster
+- `kadane.json`: max-activity intervals per segment
+- Plots in `reports/plots/`
+
+## Structure of Code
+- `pulse_cluster/io.py` – load CSVs → arrays; simple z-score preprocessing
+- `pulse_cluster/metrics.py` – correlation & DTW distances
+- `pulse_cluster/kadane.py` – Kadane on abs(diff) with indices
+- `pulse_cluster/closest_pair.py` – closest-pair search within given set
+- `pulse_cluster/divide_conquer.py` – top-down clustering with stop rules
+- `pulse_cluster/report.py` – markdown/JSON reports + matplotlib plots
+- `pulse_cluster/cli.py` – CLI helpers
+
+## Verification (Toy Examples)
+Run unit tests (includes toy sequences verifying DTW, Kadane, and a small clustering):
+```bash
+pytest -q
+```
+
+## Notes
+- No ML clustering libs are used; only algorithmic reasoning (divide-and-conquer, DTW/corr, Kadane).
+- DTW implementation is classic O(n²) with optional Sakoe–Chiba window (fraction of length).
+- For reproducibility, we set a seed in the example runner when generating synthetic data.
+
+## License
+MIT
