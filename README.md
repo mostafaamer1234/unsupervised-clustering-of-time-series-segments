@@ -1,322 +1,95 @@
-# PulseDB Time-Series Clustering via Divide-and-Conquer
+# Description of project
 
-This project implements **algorithmic** (non-ML) clustering and analysis of PulseDB 10-second physiological signal segments (ECG/PPG/ABP).  
-It uses a **divide-and-conquer** top-down clustering strategy, **closest-pair** search within clusters, and **Kadane's algorithm** on each series to find the most active interval.
+This write-up explains a small toolkit for sorting 10-second signal chunks pulled from PulseDB. The This toolkit was built to organize and analyze 10-second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. The idea was to stay entirely algorithmic—no machine learning libraries—while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well-known maximum-subarray algorithm.
 
-## Key Features
-- Top-down **divide-and-conquer clustering** using correlation or DTW distance
-- **Closest pair** of time series within each cluster for cohesion checks and exemplars
-- **Kadane's algorithm** on absolute first-difference to detect the most active sub-interval per segment
-- Modular Python package with clean classes and unit tests
-- Command-line interface + example driver
-- Plots and markdown/JSON reports
-- **Verified with 1000 time series** as required by project specifications
+# Installation and usage
 
-## Flowchart
-```mermaid
-flowchart TD
-  A[Load segments] --> B[Preprocess (z-score, trim/align)]
-  B --> C{Divide & Conquer Split?}
-  C -->|dist metric| D[Choose pivot & compute distances]
-  D --> E[Median split -> left/right subsets]
-  E --> C
-  C -->|stop rule met| F[Cluster formed]
-  F --> G[Closest Pair per cluster]
-  B --> H[Kadane per segment]
-  G --> I[Reports & Visuals]
-  H --> I
-```
+1. Install Python 3.10 or newer. Create virtual environment:
+   ```
+   python -m venv .venv
+   source .venv/bin/activate          # Windows: .venv\Scripts\activate
+   ```
+2. Pull in the dependencies and put the package on the path:
+   ```
+   pip install -r requirements.txt
+   pip install -e .
+   ```
+3. Fast lane (generates data if the folder is empty, runs the pipeline, verifies the algorithms, and produces the reports):
+   ```
+   python run_analysis.py --generate_data --verify
+   ```
+4. To run on data you already have, place single-column CSV files in `data/` and call:
+   ```
+   python run_analysis.py --data_dir data --out_dir reports --metric correlation
+   ```
 
-## Installation
-```bash
-# Clone the repository
-git clone <repository-url>
-cd pulsedb-divide-and-conquer
+# Structure of Code
 
-# (Optional) create a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+- `pulse_cluster/`
+  - `io.py` loads CSV files and performs simple z-score scaling plus interpolation to a common sample count.
+  - `metrics.py` offers correlation distance and a plain DTW with an optional window.
+  - `divide_conquer.py` contains the recursive clustering logic.
+  - `closest_pair.py` scans a cluster and reports the tightest pair.
+  - `kadane.py` houses Kadane’s algorithm and the helper that applies it to absolute differences.
+  - `report.py` handles JSON/Markdown writing and draws plots with Matplotlib.
+  - `cli.py` shapes command-line arguments and ties everything together.
+- `examples/run_pipeline.py` is a straightforward script that invokes the CLI.
+- `tests/test_all.py` covers minimal but useful regression tests.
+- Support scripts in the project root:
+  - `generate_1000_series.py` creates a reproducible set of 1000 synthetic segments.
+  - `run_analysis.py` is a convenience wrapper that chains the common steps.
+  - `verify_algorithms.py` prints toy runs for each algorithm.
+  - `generate_final_report.py` summarizes results into markdown and creates aggregate plots.
+- Output directories:
+  - `reports/` stores the most recent run (JSON files, a short summary, and up to 60 plots).
+  - `reports_1000/` keeps the larger benchmark run and adds higher-level charts.
+- A ready-to-use `data/` directory is included so evaluations can run without waiting for downloads.
 
-# Install dependencies
-pip install -r requirements.txt
+# Description of algorithms
 
-# Install the package in development mode
-pip install -e .
-```
+- **Divide-and-conquer clustering**  
+  Take the current list of series, pick one pivot at random, compute distances to that pivot, split by the median distance, and recurse. Stopping conditions include hitting a depth limit, dropping under a minimum cluster size, or meeting a dispersion threshold. It is a light-weight top-down alternative to more complicated clustering tools.
 
-## Quick Start
+- **Closest pair search**  
+  For each cluster that has at least two series, iterate over all combinations, compute their distance, and keep the pair with the lowest score. The brute-force approach is fine because the clusters produced above are never huge.
 
-### Option 1: Easy Analysis Script (Recommended)
-```bash
-# Generate 1000 synthetic time series and run analysis
-python run_analysis.py --generate_data --verify
+- **Kadane’s algorithm on absolute differences**  
+  For each signal, compute the absolute difference between consecutive samples and run Kadane’s linear pass to find the subarray with the largest sum. That interval is treated as the “most active” region and highlighted in the plots.
 
-# Run analysis on your own data
-python run_analysis.py --data_dir your_data --out_dir results --metric correlation
-```
+# Verification of the functionality with toy example
 
-### Option 2: Manual Pipeline
-```bash
-# Generate synthetic data (1000 time series)
-python generate_1000_series.py
+- `pytest tests/test_all.py -v` covers:
+  - Kadane returning the known answer on a textbook array.
+  - DTW reporting zero on identical sequences and staying finite on short shifts.
+  - Correlation distance falling inside its [0, 2] range.
+  - Divide-and-conquer keeping track of every element as it splits.
+- `python verify_algorithms.py` prints simple, readable examples:
+  - All-negative vs mixed Kadane runs.
+  - A three-signal cluster where the closest pair is obvious (two noisy sine waves) and the third is very different.
+  - A toy dataset with sine, linear, and noise segments that shows how the recursion groups similar shapes.
 
-# Run the analysis pipeline
-python examples/run_pipeline.py --data_dir data --out_dir reports --metric correlation --max_depth 6 --min_cluster_size 15
+# Execution results with 1000 time series
 
-# Verify algorithms work correctly
-python verify_algorithms.py
+- Synthetic generator output: 209 ECG, 189 PPG, 199 ABP, 189 arrhythmia-style, 214 stress-style segments (all 256 samples long).
+- Running the combined script (`python run_analysis.py --generate_data --verify`) produced:
+  - `reports_1000/clusters.json`: 32 clusters, each holding about 30–33 members.
+  - `reports_1000/closest_pairs.json`: average closest-pair distance near 0.10 using correlation; the tightest pair scored ~0.035.
+  - `reports_1000/kadane.json`: most series had an active interval covering nearly the full window [0, 255), which fits the synthetic patterns.
+  - `reports_1000/plots/`: 60 sample plots with the most active window shaded.
+  - `reports_1000/analysis_plots/`: histograms for cluster sizes and distance distributions, plus box plots for Kadane scores by signal type.
+  - `reports_1000/FINAL_REPORT.md`: a longer narrative combining the numbers, tables, and pictures.
 
-# Generate comprehensive report
-python generate_final_report.py
-```
+# Discussion on execution results
 
-## Data Format
-Place your PulseDB segments in `data/` as CSVs. Each CSV should contain **one column** named `value` (or no header) with uniformly sampled values for a single 10s segment.  
-Files may be nested in subfolders; the loader will recurse. Example:
-```
-data/
-  ABP_0001.csv
-  ECG_0234.csv
-  PPG_0456.csv
-```
+- The recursive clustering worked as expected: eighteen clusters were dominated by a single signal family (≥70% of members from one type). That provided a quick sanity check that correlation distance plus a random pivot is reasonable for this dataset.
+- The closest-pair table helped spot representative examples. When the distance was in the 0.04–0.06 range, the matching signals looked almost identical when plotted. Larger distances (above 0.20) pointed to clusters with more variety.
+- Kadane’s output showed that the synthetic signals never really settled down, so the most active interval was usually the entire length. That might change with real-world recordings that contain quieter gaps.
+- Runtime concerns: correlation-based runs finish in a few minutes on a laptop. DTW runs take longer because of the quadratic cost, so the optional window parameter (`--dtw_window 0.1`) is important if DTW is selected.
+- Limitations and possible fixes:
+  - Random pivot choice can yield lopsided splits. Trying several candidate pivots per level or picking a medoid would improve balance.
+  - Closest-pair checks scale quadratically with cluster size. It is fine here, but for very large clusters a faster nearest-neighbor approach may be needed.
+  - Signals with almost no variance can confuse correlation distance. The preprocessing step drops those to a default distance of 1.0, but detecting and handling flat signals earlier would make the process cleaner.
 
-## Output Files
-- `clusters.json`: cluster membership and per-cluster stats
-- `closest_pairs.json`: closest pairs and distances per cluster
-- `kadane.json`: max-activity intervals per segment
-- `SUMMARY.md`: Quick overview of results
-- `FINAL_REPORT.md`: Comprehensive analysis report
-- Plots in `reports/plots/` or `reports/analysis_plots/`
+# Conclusions
 
-## Project Structure
-
-### Directory Overview
-```
-pulsedb-divide-and-conquer/
-├──  data/                          # Input data directory
-│   └── [1000 CSV files]              # Time series segments (ECG, PPG, ABP, ARR, STR)
-├──  pulse_cluster/                 # Core algorithm package
-│   ├── __init__.py                   # Package initialization and exports
-│   ├── io.py                        # Data loading and preprocessing
-│   ├── metrics.py                   # Distance metrics (correlation, DTW)
-│   ├── divide_conquer.py            # Divide-and-conquer clustering algorithm
-│   ├── closest_pair.py              # Closest pair search within clusters
-│   ├── kadane.py                    # Kadane's algorithm for maximum subarray
-│   ├── report.py                    # Report generation and visualization
-│   └── cli.py                       # Command-line interface
-├── examples/                     # Example usage and drivers
-│   └── run_pipeline.py              # Main pipeline execution script
-├──  tests/                        # Unit tests and verification
-│   └── test_all.py                  # Comprehensive algorithm tests
-├──  reports/                      # Analysis results and outputs
-│   ├── clusters.json                # Cluster membership and statistics
-│   ├── closest_pairs.json           # Closest pairs and distances per cluster
-│   ├── kadane.json                  # Activity intervals and scores
-│   ├── SUMMARY.md                   # Quick results overview
-│   ├── FINAL_REPORT.md              # Comprehensive analysis report
-│   └──  plots/                    # Individual time series visualizations
-├──  reports_1000/                 # Results from 1000 time series analysis
-│   ├── analysis_plots/              # Summary visualizations and charts
-│   ├── plots/                      # Individual series plots with annotations
-│   └── [JSON and MD reports]        # Detailed analysis results
-├──  run_analysis.py               # Easy-to-use analysis script
-├──  generate_1000_series.py       # Synthetic data generation
-├──  verify_algorithms.py          # Algorithm verification with toy examples
-├──  generate_final_report.py      # Comprehensive report generation
-├──  setup.py                     # Package installation configuration
-├──  requirements.txt              # Python dependencies
-└──  README.md                     # This documentation
-```
-
-### Core Algorithm Files
-- **`pulse_cluster/io.py`** – Data loading, CSV parsing, z-score preprocessing, length harmonization
-- **`pulse_cluster/metrics.py`** – Correlation distance, DTW with Sakoe-Chiba window
-- **`pulse_cluster/divide_conquer.py`** – Recursive top-down clustering with median splitting
-- **`pulse_cluster/closest_pair.py`** – Brute-force closest pair search within clusters
-- **`pulse_cluster/kadane.py`** – Kadane's algorithm for maximum subarray detection
-- **`pulse_cluster/report.py`** – JSON/Markdown report generation, matplotlib visualizations
-- **`pulse_cluster/cli.py`** – Command-line argument parsing and main execution
-
-## Algorithm Verification
-The system includes comprehensive verification with toy examples:
-
-```bash
-# Run algorithm verification
-python verify_algorithms.py
-
-# Run unit tests
-pytest tests/test_all.py -v
-```
-
-### Verified Algorithms:
-1. **Kadane's Algorithm**: Tested on known arrays with expected results
-2. **Distance Metrics**: Correlation and DTW distances with identity properties
-3. **Divide-and-Conquer Clustering**: Partition size invariants and convergence
-4. **Closest Pair**: Correct identification of most similar pairs
-
-## Project Requirements Compliance
-
- **All Required Components Implemented:**
-- Divide-and-conquer clustering algorithm
-- Closest pair algorithm within clusters  
-- Kadane's algorithm for maximum subarray
-- Processing of 1000 time series segments
-- Comprehensive reporting and visualization
-- Algorithm verification with toy examples
-
- **Required Report Sections:**
-- Description of project
-- Installation and usage instructions
-- Structure of code
-- Description of algorithms
-- Verification with toy examples
-- Execution results with 1000 time series
-- Discussion of results
-- Conclusions
-
- **Deliverables:**
-- Well-organized, modular codebase
-- Clean, maintainable Python code
-- Comprehensive documentation
-- Visualizations and reports
-- Algorithm verification
-- Results analysis
-
-## Example Results (1000 Time Series)
-- **Total series processed**: 1000
-- **Number of clusters formed**: 32
-- **Average cluster size**: 31.25
-- **Signal types**: ECG (209), PPG (189), ABP (199), ARR (189), STR (214)
-- **Clustering effectiveness**: 18/32 clusters show ≥70% dominance of single signal type
-- **Activity analysis**: Stress and arrhythmic patterns show highest activity scores
-
-## Notes
-- No ML clustering libs are used; only algorithmic reasoning (divide-and-conquer, DTW/corr, Kadane).
-- DTW implementation is classic O(n²) with optional Sakoe–Chiba window (fraction of length).
-- For reproducibility, we set a seed in the example runner when generating synthetic data.
-- The system successfully processes 1000 time series as required by project specifications.
-
-## Deliverables Mapping
-
-This section maps each project deliverable to the specific files and folders that satisfy the requirements:
-
-### **Code Submission Requirements**
-
-#### **Well-organized, modular codebase**
-- **`pulse_cluster/`** - Core algorithm package with clean separation of concerns
-- **`examples/run_pipeline.py`** - Main execution driver
-- **`run_analysis.py`** - Easy-to-use analysis script
-- **`setup.py`** - Package configuration for proper installation
-
-#### **Clean, maintainable Python code**
-- **`pulse_cluster/`** - All modules follow Python best practices
-- **`tests/test_all.py`** - Comprehensive unit tests
-- **`verify_algorithms.py`** - Algorithm verification with toy examples
-- **`requirements.txt`** - Clear dependency management
-
-#### **Modular structure with specific task classes**
-- **`pulse_cluster/io.py`** - Data loading and preprocessing tasks
-- **`pulse_cluster/metrics.py`** - Distance computation tasks
-- **`pulse_cluster/divide_conquer.py`** - Clustering algorithm tasks
-- **`pulse_cluster/closest_pair.py`** - Similarity search tasks
-- **`pulse_cluster/kadane.py`** - Activity detection tasks
-- **`pulse_cluster/report.py`** - Visualization and reporting tasks
-
-### **Minimal Report Requirements**
-
-#### **Project overview and goals**
-- **`README.md`** - Complete project description and goals
-- **`reports/FINAL_REPORT.md`** - Comprehensive analysis report
-- **`PROJECT_SUMMARY.md`** - Project status and achievements
-
-#### **Algorithm descriptions**
-- **`README.md`** - Detailed algorithm descriptions with complexity analysis
-- **`reports/FINAL_REPORT.md`** - In-depth algorithm explanations
-- **`verify_algorithms.py`** - Algorithm verification with examples
-
-#### **Block diagram/flowchart**
-- **`README.md`** - Mermaid flowchart showing system architecture
-- **`reports/FINAL_REPORT.md`** - Detailed system flow diagrams
-
-#### **Class descriptions and key methods**
-- **`README.md`** - Core algorithm files section with descriptions
-- **`pulse_cluster/`** - Well-documented modules with clear purposes
-
-#### **Installation and usage instructions**
-- **`README.md`** - Complete installation and usage guide
-- **`setup.py`** - Package installation configuration
-- **`requirements.txt`** - Dependency specifications
-
-#### **Code execution examples**
-- **`README.md`** - Multiple usage examples and command-line options
-- **`examples/run_pipeline.py`** - Executable pipeline example
-- **`run_analysis.py`** - Easy-to-use analysis script
-
-#### **Component verification with toy examples**
-- **`verify_algorithms.py`** - Comprehensive algorithm verification
-- **`tests/test_all.py`** - Unit tests for all components
-- **`README.md`** - Verification results and examples
-
-#### **Results from 1000 time series analysis**
-- **`reports_1000/`** - Complete results from 1000 time series
-- **`reports_1000/FINAL_REPORT.md`** - Detailed analysis of results
-- **`reports_1000/analysis_plots/`** - Summary visualizations
-- **`generate_1000_series.py`** - Synthetic data generation
-
-#### **Findings and insights discussion**
-- **`reports_1000/FINAL_REPORT.md`** - Comprehensive results discussion
-- **`PROJECT_SUMMARY.md`** - Key findings and achievements
-- **`reports_1000/analysis_plots/`** - Visual insights and patterns
-
-#### **Limitations and improvements**
-- **`reports/FINAL_REPORT.md`** - Detailed limitations analysis
-- **`PROJECT_SUMMARY.md`** - Future improvements and recommendations
-- **`README.md`** - Performance characteristics and scalability notes
-
-### **Required Sections in Report**
-
-#### **Description of project**
-- **`README.md`** - Complete project description
-- **`reports/FINAL_REPORT.md`** - Detailed project overview
-
-#### **Installation and usage**
-- **`README.md`** - Step-by-step installation guide
-- **`setup.py`** - Package installation configuration
-
-#### **Structure of Code**
-- **`README.md`** - Complete project structure with file descriptions
-- **`pulse_cluster/`** - Modular code organization
-
-#### **Description of algorithms**
-- **`README.md`** - Algorithm descriptions with complexity analysis
-- **`reports/FINAL_REPORT.md`** - Detailed algorithm explanations
-
-####  **Verification with toy examples**
-- **`verify_algorithms.py`** - Comprehensive verification script
-- **`tests/test_all.py`** - Unit tests for all algorithms
-
-#### **Execution results with 1000 time series**
-- **`reports_1000/`** - Complete results from 1000 time series analysis
-- **`reports_1000/FINAL_REPORT.md`** - Detailed results analysis
-
-#### **Discussion of results**
-- **`reports_1000/FINAL_REPORT.md`** - Comprehensive results discussion
-- **`PROJECT_SUMMARY.md`** - Key findings and insights
-
-#### **Conclusions**
-- **`reports/FINAL_REPORT.md`** - Detailed conclusions and future work
-- **`PROJECT_SUMMARY.md`** - Project success summary
-
-### **GitHub Repository Structure**
-
-All files are organized for easy GitHub submission:
-- **Root level**: Main scripts, documentation, and configuration files
-- **`pulse_cluster/`**: Core algorithm package
-- **`examples/`**: Usage examples and drivers
-- **`tests/`**: Unit tests and verification
-- **`reports/`**: Analysis results and outputs
-- **`data/`**: Input data (1000 CSV files)
-- **Documentation**: README.md, setup.py, requirements.txt
-
-## License
-MIT
+This project shows how far simple, well-chosen algorithms can go in organizing short physiological signals. The divide-and-conquer approach created coherent clusters without depending on heavy machine-learning frameworks. The closest-pair feature made it easy to inspect representative examples, while Kadane’s method efficiently located high-activity sections within each trace. Even when scaled to a thousand samples, the toolkit stayed fast, clear, and interpretable. Future refinements could focus on smarter pivot selection, faster pair comparisons, and better handling of low-variance data, but as it stands, the system fulfills its main purpose—turning a pile of signals into structured, understandable insight.
