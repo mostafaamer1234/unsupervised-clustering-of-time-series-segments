@@ -58,15 +58,33 @@ This write-up explains a small toolkit for sorting 10-second signal chunks pulle
 
 # Verification of the functionality with toy example
 
-- `pytest tests/test_all.py -v` covers:
-  - Kadane returning the known answer on a textbook array.
-  - DTW reporting zero on identical sequences and staying finite on short shifts.
-  - Correlation distance falling inside its [0, 2] range.
-  - Divide-and-conquer keeping track of every element as it splits.
-- `python verify_algorithms.py` prints simple, readable examples:
-  - All-negative vs mixed Kadane runs.
-  - A three-signal cluster where the closest pair is obvious (two noisy sine waves) and the third is very different.
-  - A toy dataset with sine, linear, and noise segments that shows how the recursion groups similar shapes.
+Running `python verify_algorithms.py` walks through a small hand-crafted scenario right in the console. The script makes three signals: two nearly identical sine waves and one cosine wave. Here is the exact output from that run:
+
+```
+=== Closest Pair Algorithm Verification ===
+Created toy cluster with 3 signals:
+  - similar1: sin(t)
+  - similar2: sin(t) + small noise
+  - different: cos(t)
+
+Closest pair: (similar1, similar2)
+Distance: 0.000075
+Expected: (similar1, similar2) with small distance
+✓ Correct pair: True
+✓ Small distance: True
+```
+
+You can also see Kadane’s algorithm work on a classic sample array in the same run:
+
+```
+=== Kadane's Algorithm Verification ===
+Array: [-2  1 -3  4 -1  2  1 -5  4]
+Maximum subarray: [3, 7), sum = 6.0
+Expected: [3, 7), sum = 6
+✓ Correct: True
+```
+
+Finally, the script demonstrates the recursive splitter on a tiny mix of sine, linear, and random signals and prints the clusters it finds. That toy example shows the entire loop—load the signals, split them, identify the closest pair, and confirm Kadane’s range—without having to inspect the source code.
 
 # Execution results with 1000 time series
 
