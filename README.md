@@ -1,6 +1,6 @@
 # Description of project
 
-This toolkit was built to organize and analyze 10 second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. This project was entirely algorithmic, no machine learning libraries, while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well-known maximum-subarray algorithm.
+This toolkit was built to organize and analyze 10 second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. This project was entirely algorithmic, no machine learning libraries, while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well-known maximum subarray algorithm.
 
 # Installation and usage
 
@@ -48,13 +48,13 @@ This toolkit was built to organize and analyze 10 second signal segments taken f
 # Description of algorithms
 
 - **Divide-and-conquer clustering**  
-  Takes the current list of series, picks one pivot at random, computes distances to that pivot, splits by the median distance, and recurse. Stopping conditions include hitting a depth limit, dropping under a minimum cluster size, or meeting a dispersion threshold. It is a light-weight top-down alternative to more complicated clustering tools.
+  Takes the current list of series, picks one pivot at random, computes distances to that pivot, splits by the median distance, and recurse. Stopping conditions include hitting a depth limit, dropping under a minimum cluster size, or meeting a dispersion threshold. It is a light weight top down alternative to more complicated clustering tools.
 
 - **Closest pair search**  
-  For each cluster that has at least two series, iterate over all combinations, compute their distance, and keep the pair with the lowest score. Since clusters are small, the simple brute-force approach is fast enough and provides a good benchmark of similarity.
+  For each cluster that has at least two series, iterate over all combinations, compute their distance, and keep the pair with the lowest score. Since clusters are small, the simple brute force approach is fast enough and provides a good benchmark of similarity.
 
 - **Kadane’s algorithm on absolute differences**  
-  For each signal, absolute differences between consecutive points are calculated, and Kadane’s linear-time algorithm finds the subarray with the largest sum. That section is marked as the “active” region when plotting.
+  For each signal, absolute differences between consecutive points are calculated, and Kadane’s linear time algorithm finds the subarray with the largest sum. That section is marked as the “active” region when plotting.
 
 # Verification of the functionality with toy example
 
@@ -101,10 +101,10 @@ Finally, the script demonstrates the recursive splitter on a tiny mix of sine, l
 
 The recursive clustering behaved sensibly about two thirds of clusters were dominated by a single signal category, confirming that correlation distance and random pivoting worked fairly well for this dataset. The closest pair report provided clear visual matches, with near identical curves when distances dropped below 0.06. Kadane’s analysis showed consistent high activity across the entire sample window, which made sense given how the synthetic signals were generated.
 
-On performance, correlation-based runs completed within minutes, while DTW required more time due to its quadratic cost. Limiting the DTW window (--dtw_window 0.1) reduced runtime without losing much accuracy.
+On performance, correlation based runs completed within minutes, while DTW required more time due to its quadratic cost. Limiting the DTW window (--dtw_window 0.1) reduced runtime without losing much accuracy.
 
-There are, however, a few known weak spots. Random pivot selection can produce unbalanced clusters; experimenting with medoids or multiple pivot candidates could help. The closest-pair step scales quadratically, which is fine for smaller clusters but could be optimized for larger ones. Finally, signals with almost no variance sometimes confuse correlation distance—adding a pre-check to handle flat traces earlier would improve consistency.
+There are, however, a few known weak spots. Random pivot selection can produce unbalanced clusters; experimenting with medoids or multiple pivot candidates could help. The closest-pair step scales quadratically, which is fine for smaller clusters but could be optimized for larger ones. Finally, signals with almost no variance sometimes confuse correlation distance adding a pre-check to handle flat traces earlier would improve consistency.
 
 # Conclusions
 
-This project shows how well multiple well chosen algorithms can go in organizing short physiological signals. The divide-and-conquer approach created coherent clusters without depending on heavy machine-learning frameworks. The closest-pair feature made it easy to inspect representative examples, while Kadane’s method efficiently located high activity sections within each trace. Even when scaled to a thousand samples, the toolkit stayed fast, clear, and interpretable. Future refinements could focus on smarter pivot selection, faster pair comparisons, and better handling of low-variance data, but as it stands, the system fulfills its main purpose—turning a pile of signals into structured, understandable insight.
+This project shows how well multiple well chosen algorithms can go in organizing short physiological signals. The divide-and-conquer approach created coherent clusters without depending on heavy machine learning frameworks. The closest pair feature made it easy to inspect representative examples, while Kadane’s method efficiently located high activity sections within each trace. Even when scaled to a thousand samples, the toolkit stayed fast, clear, and interpretable. Future refinements could focus on smarter pivot selection, faster pair comparisons, and better handling of low variance data, but as it stands, the system fulfills its main purpose turning a pile of signals into structured understandable insight.
