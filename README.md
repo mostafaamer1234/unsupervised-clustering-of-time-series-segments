@@ -58,7 +58,7 @@ This toolkit was built to organize and analyze 10 second signal segments taken f
 
 # Verification of the functionality with toy example
 
-Running `python verify_algorithms.py` walks through a small hand-crafted scenario right in the console. The script makes three signals: two nearly identical sine waves and one cosine wave. Here is the exact output from that run:
+Running `python verify_algorithms.py` walks through a small hand crafted scenario right in the console. The script makes three signals: two nearly identical sine waves and one cosine wave. Here is the exact output from that run:
 
 ```
 === Closest Pair Algorithm Verification ===
@@ -84,11 +84,11 @@ Expected: [3, 7), sum = 6
 ✓ Correct: True
 ```
 
-Finally, the script demonstrates the recursive splitter on a tiny mix of sine, linear, and random signals and prints the clusters it finds. That toy example shows the entire loop load the signals, split them, identify the closest pair, and confirm Kadane’s range without having to inspect the source code.
+The script demonstrates the recursive splitter on a tiny mix of sine, linear, and random signals and prints the clusters it finds. That toy example shows the entire loop load the signals, split them, identify the closest pair, and confirm Kadane’s range without having to inspect the source code.
 
 # Execution results with 1000 time series
 
-- Synthetic generator output: 209 ECG, 189 PPG, 199 ABP, 189 arrhythmia-style, 214 stress-style segments (all 256 samples long).
+- Synthetic generator output: 209 ECG, 189 PPG, 199 ABP, 189 arrhythmia style, 214 stress style segments (all 256 samples long).
 - Running the combined script (`python run_analysis.py --generate_data --verify`) produced:
   - `reports_1000/clusters.json`: 32 clusters, each holding about 30–33 members.
   - `reports_1000/closest_pairs.json`: average closest-pair distance near 0.10 using correlation; the tightest pair scored ~0.035.
