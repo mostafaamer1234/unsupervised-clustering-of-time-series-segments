@@ -7,7 +7,7 @@ This write-up explains a small toolkit for sorting 10-second signal chunks pulle
 1. Install Python 3.10 or newer. Create virtual environment:
    ```
    python -m venv .venv
-   source .venv/bin/activate          # Windows: .venv\Scripts\activate
+   source .venv/bin/activate         
    ```
 2. Pull in the dependencies and put the package on the path:
    ```
@@ -48,13 +48,13 @@ This write-up explains a small toolkit for sorting 10-second signal chunks pulle
 # Description of algorithms
 
 - **Divide-and-conquer clustering**  
-  Take the current list of series, pick one pivot at random, compute distances to that pivot, split by the median distance, and recurse. Stopping conditions include hitting a depth limit, dropping under a minimum cluster size, or meeting a dispersion threshold. It is a light-weight top-down alternative to more complicated clustering tools.
+  Takes the current list of series, picks one pivot at random, computes distances to that pivot, splits by the median distance, and recurse. Stopping conditions include hitting a depth limit, dropping under a minimum cluster size, or meeting a dispersion threshold. It is a light-weight top-down alternative to more complicated clustering tools.
 
 - **Closest pair search**  
-  For each cluster that has at least two series, iterate over all combinations, compute their distance, and keep the pair with the lowest score. The brute-force approach is fine because the clusters produced above are never huge.
+  For each cluster that has at least two series, iterate over all combinations, compute their distance, and keep the pair with the lowest score. Since clusters are small, the simple brute-force approach is fast enough and provides a good benchmark of similarity.
 
 - **Kadane’s algorithm on absolute differences**  
-  For each signal, compute the absolute difference between consecutive samples and run Kadane’s linear pass to find the subarray with the largest sum. That interval is treated as the “most active” region and highlighted in the plots.
+  For each signal, absolute differences between consecutive points are calculated, and Kadane’s linear-time algorithm finds the subarray with the largest sum. That section is marked as the “active” region when plotting.
 
 # Verification of the functionality with toy example
 
