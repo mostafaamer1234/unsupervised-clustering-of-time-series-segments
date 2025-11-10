@@ -1,6 +1,6 @@
 # Description of project
 
-This write-up explains a small toolkit for sorting 10-second signal chunks pulled from PulseDB. The This toolkit was built to organize and analyze 10-second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. The idea was to stay entirely algorithmic—no machine learning libraries—while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well-known maximum-subarray algorithm.
+This toolkit was built to organize and analyze 10 second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. This project was entirely algorithmic, no machine learning libraries, while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well-known maximum-subarray algorithm.
 
 # Installation and usage
 
@@ -84,7 +84,7 @@ Expected: [3, 7), sum = 6
 ✓ Correct: True
 ```
 
-Finally, the script demonstrates the recursive splitter on a tiny mix of sine, linear, and random signals and prints the clusters it finds. That toy example shows the entire loop—load the signals, split them, identify the closest pair, and confirm Kadane’s range—without having to inspect the source code.
+Finally, the script demonstrates the recursive splitter on a tiny mix of sine, linear, and random signals and prints the clusters it finds. That toy example shows the entire loop load the signals, split them, identify the closest pair, and confirm Kadane’s range without having to inspect the source code.
 
 # Execution results with 1000 time series
 
@@ -99,15 +99,12 @@ Finally, the script demonstrates the recursive splitter on a tiny mix of sine, l
 
 # Discussion on execution results
 
-- The recursive clustering worked as expected: eighteen clusters were dominated by a single signal family (≥70% of members from one type). That provided a quick sanity check that correlation distance plus a random pivot is reasonable for this dataset.
-- The closest-pair table helped spot representative examples. When the distance was in the 0.04–0.06 range, the matching signals looked almost identical when plotted. Larger distances (above 0.20) pointed to clusters with more variety.
-- Kadane’s output showed that the synthetic signals never really settled down, so the most active interval was usually the entire length. That might change with real-world recordings that contain quieter gaps.
-- Runtime concerns: correlation-based runs finish in a few minutes on a laptop. DTW runs take longer because of the quadratic cost, so the optional window parameter (`--dtw_window 0.1`) is important if DTW is selected.
-- Limitations and possible fixes:
-  - Random pivot choice can yield lopsided splits. Trying several candidate pivots per level or picking a medoid would improve balance.
-  - Closest-pair checks scale quadratically with cluster size. It is fine here, but for very large clusters a faster nearest-neighbor approach may be needed.
-  - Signals with almost no variance can confuse correlation distance. The preprocessing step drops those to a default distance of 1.0, but detecting and handling flat signals earlier would make the process cleaner.
+The recursive clustering behaved sensibly about two thirds of clusters were dominated by a single signal category, confirming that correlation distance and random pivoting worked fairly well for this dataset. The closest pair report provided clear visual matches, with near identical curves when distances dropped below 0.06. Kadane’s analysis showed consistent high activity across the entire sample window, which made sense given how the synthetic signals were generated.
+
+On performance, correlation-based runs completed within minutes, while DTW required more time due to its quadratic cost. Limiting the DTW window (--dtw_window 0.1) reduced runtime without losing much accuracy.
+
+There are, however, a few known weak spots. Random pivot selection can produce unbalanced clusters; experimenting with medoids or multiple pivot candidates could help. The closest-pair step scales quadratically, which is fine for smaller clusters but could be optimized for larger ones. Finally, signals with almost no variance sometimes confuse correlation distance—adding a pre-check to handle flat traces earlier would improve consistency.
 
 # Conclusions
 
-This project shows how far simple, well-chosen algorithms can go in organizing short physiological signals. The divide-and-conquer approach created coherent clusters without depending on heavy machine-learning frameworks. The closest-pair feature made it easy to inspect representative examples, while Kadane’s method efficiently located high-activity sections within each trace. Even when scaled to a thousand samples, the toolkit stayed fast, clear, and interpretable. Future refinements could focus on smarter pivot selection, faster pair comparisons, and better handling of low-variance data, but as it stands, the system fulfills its main purpose—turning a pile of signals into structured, understandable insight.
+This project shows how well multiple well chosen algorithms can go in organizing short physiological signals. The divide-and-conquer approach created coherent clusters without depending on heavy machine-learning frameworks. The closest-pair feature made it easy to inspect representative examples, while Kadane’s method efficiently located high activity sections within each trace. Even when scaled to a thousand samples, the toolkit stayed fast, clear, and interpretable. Future refinements could focus on smarter pivot selection, faster pair comparisons, and better handling of low-variance data, but as it stands, the system fulfills its main purpose—turning a pile of signals into structured, understandable insight.
