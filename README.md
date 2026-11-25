@@ -1,3 +1,9 @@
+# Unsupervised Clustering of Time-Series Segments
+
+![CI](https://github.com/mostafaamer1234/unsupervised-clustering-of-time-series-segments/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
+
 # Description of project
 
 This toolkit was built to organize and analyze 10 second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. This project was entirely algorithmic, no machine learning libraries, while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well known maximum subarray algorithm.
@@ -108,3 +114,30 @@ There are, however, a few known weak spots. Random pivot selection can produce u
 # Conclusions
 
 This project shows how well multiple well chosen algorithms can go in organizing short physiological signals. The divide-and-conquer approach created coherent clusters without depending on heavy machine learning frameworks. The closest pair feature made it easy to inspect representative examples, while Kadane’s method efficiently located high activity sections within each trace. Even when scaled to a thousand samples, the toolkit stayed fast, clear, and interpretable. Future refinements could focus on smarter pivot selection, faster pair comparisons, and better handling of low variance data, but as it stands, the system fulfills its main purpose turning a pile of signals into structured understandable insight.
+
+
+# Benchmark against baselines
+
+The five signal families in `data/` (ABP, ARR, ECG, PPG, STR; 1,000 series) are encoded in the file names, which gives ground truth for external metrics. `benchmarks/compare_baselines.py` scores each method with ARI (0 = chance), NMI and purity:
+
+| Method | Clusters | ARI | NMI | Purity |
+|---|---|---|---|---|
+| Divide-and-conquer (this repo, correlation distance) | 64 | 0.015 | 0.142 | 46.5% |
+| k-means, k=5 (z-normalized Euclidean) | 5 | 0.037 | 0.068 | 29.8% |
+| Agglomerative, k=5 (correlation distance, average linkage) | 5 | 0.014 | 0.052 | 27.8% |
+| k-means, k=5 on FFT magnitude spectrum (phase-invariant) | 5 | **0.269** | **0.299** | 43.1% |
+| Divide-and-conquer on FFT spectrum | 64 | 0.035 | 0.237 | 57.2% |
+
+What this shows:
+- **All shape-based distances are near chance.** These are quasi-periodic signals that start at arbitrary phases, so two ECG segments that are offset in time look unrelated to correlation or Euclidean distance, whichever algorithm is used.
+- **A phase-invariant representation is what moves the needle.** k-means on the FFT magnitude spectrum reaches ARI 0.27, about 7x the best shape-based method.
+- **Divide-and-conquer produces many small, purer clusters** (purity up to 57%). That suits exploration, but external indices that expect 5 groups penalize it.
+- **Next steps:** shift-invariant distances (cross-correlation maximum, k-Shape) or DTW with a window sized to one beat.
+
+Divide-and-conquer takes `seed=` for reproducible pivots, and the benchmark uses `seed=0`.
+
+```bash
+pip install -e ".[dev]"
+python benchmarks/compare_baselines.py
+pytest -q tests
+```

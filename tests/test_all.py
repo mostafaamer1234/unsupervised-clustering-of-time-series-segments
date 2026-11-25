@@ -33,3 +33,16 @@ def test_divide_and_conquer_clusters():
     from pulse_cluster.metrics import correlation_distance
     clusters = divide_and_conquer(ids, series, correlation_distance, max_depth=4, min_cluster_size=3)
     assert sum(len(c) for c in clusters) == 9
+
+
+def test_divide_and_conquer_is_reproducible_with_seed():
+    import numpy as np
+    from pulse_cluster.divide_conquer import divide_and_conquer
+
+    rng = np.random.default_rng(1)
+    series = {f"s{i}": rng.normal(size=50) for i in range(60)}
+    dist = lambda a, b: float(np.linalg.norm(a - b))  # noqa: E731
+    first = divide_and_conquer(sorted(series), series, dist, min_cluster_size=5, seed=7)
+    second = divide_and_conquer(sorted(series), series, dist, min_cluster_size=5, seed=7)
+    assert first == second
+    assert sorted(s for c in first for s in c) == sorted(series)  # every series lands in exactly one cluster
