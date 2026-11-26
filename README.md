@@ -4,6 +4,9 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
+**Interactive page: [pulse-clusters.vercel.app](https://pulse-clusters.vercel.app)**. Compare segments in time and as spectra, see the benchmark, and the most-active intervals. The page lives in `site/` and its data comes from `python export_site_data.py`.
+
+
 # Description of project
 
 This toolkit was built to organize and analyze 10 second signal segments taken from PulseDB. The dataset includes ECG, PPG, and ABP traces, along with a few synthetic stress and arrhythmia signals. This project was entirely algorithmic, no machine learning libraries, while still producing meaningful structure from the data. The system groups similar signals, finds the two most alike within each group, and highlights where each signal shows its highest activity. Everything relies on distance scores, recursive splits, and Kadane’s well known maximum subarray algorithm.
