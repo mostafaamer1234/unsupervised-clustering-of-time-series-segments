@@ -14,6 +14,13 @@ def test_most_active_interval():
     l, r, s = most_active_interval(x, transform="absdiff")
     assert l < r and s > 0
 
+def test_most_active_interval_finds_the_burst_not_the_whole_series():
+    x = np.tile([0.05, -0.05], 50)  # a calm signal is still never perfectly flat
+    x[40:60] = np.tile([1.0, -1.0], 10)
+    l, r, s = most_active_interval(x, transform="absdiff")
+    assert 35 <= l <= 41 and 58 <= r <= 62
+    assert r - l < 30
+
 def test_dtw():
     a = np.array([0,1,2,3], dtype=float)
     b = np.array([0,1,2,3], dtype=float)

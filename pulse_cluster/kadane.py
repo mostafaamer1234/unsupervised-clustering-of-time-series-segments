@@ -32,4 +32,7 @@ def most_active_interval(x: np.ndarray, transform: str = "absdiff"):
         y = dx * dx
     else:
         y = np.abs(dx)
-    return kadane_max_subarray(y)
+    # Activity is never negative, so Kadane on the raw values always returns the whole series.
+    # Centering on the mean makes calm stretches negative, so the result is the stretch that is
+    # more active than the signal's own average.
+    return kadane_max_subarray(y - y.mean())

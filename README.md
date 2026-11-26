@@ -60,7 +60,7 @@ This toolkit was built to organize and analyze 10 second signal segments taken f
   For each cluster that has at least two series, iterate over all combinations, compute their distance, and keep the pair with the lowest score. Since clusters are small, the simple brute force approach is fast enough and provides a good benchmark of similarity.
 
 - **Kadane’s algorithm on absolute differences**  
-  For each signal, absolute differences between consecutive points are calculated, and Kadane’s linear time algorithm finds the subarray with the largest sum. That section is marked as the “active” region when plotting.
+  For each signal, absolute differences between consecutive points are calculated and centered on their mean, and Kadane’s linear time algorithm finds the subarray with the largest sum: the stretch that is more active than the signal's own average. (Without centering, every difference is non-negative and the answer is always the whole signal.) That section is marked as the “active” region when plotting.
 
 # Verification of the functionality with toy example
 
