@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-**Interactive page: [pulse-clusters.vercel.app](https://pulse-clusters.vercel.app)**. Compare segments in time and as spectra, see the benchmark, and the most-active intervals. The page lives in `site/` and its data comes from `python export_site_data.py`.
+**Try it: [pulse-clusters.vercel.app](https://pulse-clusters.vercel.app)**. Drop in an ECG, PPG or blood-pressure CSV to identify its type (85% leave-one-out accuracy on the 1,000-segment library), see its closest matches and most active stretch, or cluster a whole batch with the project's algorithms and download the assignments. Runs in the browser. Data: `python export_site_data.py`. The original explainer is at [/about](https://pulse-clusters.vercel.app/about).
 
 
 # Description of project
