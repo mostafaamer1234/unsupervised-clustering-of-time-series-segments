@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pulse Clusters · Physiological signal analyzer</title>
+  <meta name="description" content="Drop in an ECG, PPG or blood-pressure segment to identify its type, find its closest matches and its most active stretch, or cluster a whole batch of signals. Runs in your browser." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2304070a'/%3E%3Cpath d='M5 17h6l2-6 4 12 3-9 2 3h5' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="tool.css" />
+</head>
+<body class="app">
+  <header class="top">
+    <a class="brand" href="/"><span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="22" height="22"><path d="M5 17h6l2-6 4 12 3-9 2 3h5" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="brand-text"><b>Pulse Clusters</b><span>Physiological signal analyzer</span></span></a>
+    <nav>
+      <span class="live">Live</span>
+      <a class="ghost" href="/about"><span class="t">How it works</span><span class="sr-only">About</span></a>
+      <a class="ghost" href="https://github.com/mostafaamer1234/unsupervised-clustering-of-time-series-segments" aria-label="Source on GitHub"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.49c-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></a>
+    </nav>
+  </header>
+
+  <main class="workspace">
+    <div class="tool-head">
+      <div>
+        <h1 id="title">Analyze a signal</h1>
+        <p id="subtitle">Identify a 10-second ECG, PPG or blood-pressure segment, find its closest matches in a 1,000-segment library, and mark its most active stretch.</p>
+      </div>
+      <div class="seg" role="group" aria-label="Mode">
+        <button type="button" data-mode="one" aria-pressed="true">One signal</button>
+        <button type="button" data-mode="batch" aria-pressed="false">Cluster a batch</button>
+      </div>
+    </div>
+
+    <!-- one signal -->
+    <section class="split" id="mode-one">
+      <aside class="panel sticky">
+        <div class="group">
+          <span class="label">Your signal</span>
+          <label class="drop" id="drop-one">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+            <b>Drop a CSV file</b><span>One column of samples, any length over 50</span>
+            <input type="file" id="file-one" accept=".csv,.txt,text/csv,text/plain" class="sr-only" />
+          </label>
+        </div>
+        <div class="group">
+          <span class="label">Or try a library segment</span>
+          <div class="chips" id="samples"></div>
+          <p class="hint">A sample is left out of its own search, so it can't match itself.</p>
+        </div>
+        <details class="group paste">
+          <summary>Paste values instead</summary>
+          <textarea class="area mono" id="paste" placeholder="0.12, 0.35, 0.61, …" spellcheck="false"></textarea>
+          <button class="btn small" id="paste-go" type="button">Analyze</button>
+        </details>
+      </aside>
+
+      <section class="panel plain" id="out-one" aria-live="polite">
+        <div class="empty"><div><b>Loading the library…</b>1,000 reference segments</div></div>
+      </section>
+    </section>
+
+    <!-- batch -->
+    <section class="split" id="mode-batch" hidden>
+      <aside class="panel sticky">
+        <div class="group">
+          <span class="label">Signals</span>
+          <label class="drop" id="drop-batch">
+            <svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+            <b>Drop several CSV files</b><span>One signal per file. Names like ECG_0001.csv let it score the result.</span>
+            <input type="file" id="file-batch" accept=".csv,.txt,text/csv,text/plain" multiple class="sr-only" />
+          </label>
+          <div class="row lib-row">
+            <span class="muted">or use</span>
+            <select class="select" id="lib-n" aria-label="Library sample size">
+              <option value="100">100 library segments</option>
+              <option value="250" selected>250 library segments</option>
+              <option value="1000">all 1,000 segments</option>
+            </select>
+            <button class="btn small secondary" id="use-lib" type="button">Load</button>
+          </div>
+          <p class="hint" id="batch-loaded">Nothing loaded yet.</p>
+        </div>
+        <div class="group">
+          <span class="label">Method</span>
+          <div class="seg full" role="group" aria-label="Method" id="method">
+            <button type="button" data-m="kmeans" aria-pressed="false">Spectrum</button>
+            <button type="button" data-m="acf" aria-pressed="true">Rhythm</button>
+            <button type="button" data-m="dc" aria-pressed="false">Divide and conquer</button>
+          </div>
+          <p class="hint" id="method-hint"></p>
+        </div>
+        <div class="group" id="k-group">
+          <label class="range"><span>Clusters</span><output id="k-out">5</output><input type="range" id="k" min="2" max="10" value="5" /></label>
+        </div>
+        <div class="group" id="dc-group" hidden>
+          <label class="range"><span>Smallest cluster</span><output id="min-out">20</output><input type="range" id="min" min="5" max="80" step="5" value="20" /></label>
+          <label class="range"><span>Max depth</span><output id="depth-out">6</output><input type="range" id="depth" min="1" max="8" value="6" /></label>
+        </div>
+        <button class="btn block" id="run" type="button" disabled>Cluster</button>
+      </aside>
+
+      <section class="panel plain" id="out-batch" aria-live="polite">
+        <div class="empty"><div><b>Load some signals</b>Drop your own CSV files, or load a sample of the library to see how the methods compare.</div></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="foot">Data: PulseDB segments plus synthetic stress and arrhythmia signals. Algorithms written from scratch. Not a medical device. <a href="/about">How it works</a></footer>
+  <script src="tool.js"></script>
+</body>
+</html>

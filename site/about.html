@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About · Pulse Clusters</title>
+  <meta name="description" content="Clustering 1,000 ECG, PPG and blood-pressure segments with hand-written algorithms, and why comparing shapes fails where comparing spectra works." />
+  <link rel="stylesheet" href="quiet.css" />
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <nav class="q-nav">
+    <div class="q-wrap">
+      <a class="q-brand" href="/">Pulse Clusters</a>
+      <div class="q-links">
+        <a href="/">Open the analyzer</a>
+        <a href="#compare">Compare</a>
+        <a href="#benchmark">Benchmark</a>
+        <a href="https://github.com/mostafaamer1234/unsupervised-clustering-of-time-series-segments">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <header class="q-wrap q-hero">
+      <p class="q-eyebrow">Algorithms · Time-series analysis</p>
+      <h1 class="q-title">Same heartbeat, different start. <span class="q-muted">Why comparing shapes fails.</span></h1>
+      <p class="q-lede">1,000 ten-second segments of ECG, PPG, blood pressure and synthetic signals, clustered with algorithms written from scratch. The benchmark showed where the obvious approach breaks.</p>
+    </header>
+
+    <section class="q-wrap" id="compare">
+      <div class="controls">
+        <div>
+          <p class="q-caps">Signal family</p>
+          <div class="q-seg" id="fam" role="group" aria-label="Signal family"></div>
+        </div>
+        <button class="q-btn q-ghost" id="shuffle">Another pair</button>
+      </div>
+
+      <div class="pair">
+        <div>
+          <p class="q-caps">In time</p>
+          <svg id="time" viewBox="0 0 600 260" preserveAspectRatio="none" aria-label="Two segments over time"></svg>
+          <div class="dist"><b id="d-time"></b><span>correlation distance between the shapes</span></div>
+        </div>
+        <div>
+          <p class="q-caps">As a spectrum</p>
+          <svg id="freq" viewBox="0 0 600 260" preserveAspectRatio="none" aria-label="Two magnitude spectra"></svg>
+          <div class="dist"><b id="d-freq"></b><span>correlation distance between the spectra</span></div>
+        </div>
+      </div>
+      <p class="q-small explain"><span id="rate"></span> Segments start at arbitrary points in the beat, so even two from the same family rarely line up in time. Frequency content ignores where the segment starts. Distances run from 0, identical, to 2, opposite.</p>
+    </section>
+
+    <section class="q-wrap q-section" id="benchmark">
+      <h2 class="q-h2">The benchmark. <span class="q-muted">Ground truth from five signal families.</span></h2>
+      <table class="q-ranked">
+        <thead><tr><th>Method</th><th>Clusters</th><th>ARI</th><th>NMI</th><th>Purity</th></tr></thead>
+        <tbody id="bench"></tbody>
+      </table>
+      <p class="q-note bench-note">Adjusted Rand Index, where 0 is chance. Every shape-based method is near chance. A phase-invariant spectrum lifts k-means about seven times above the best shape-based score.</p>
+    </section>
+
+    <section class="q-wrap q-section">
+      <h2 class="q-h2">Where each signal is most active.</h2>
+      <p class="q-lede active-lede">Kadane's algorithm finds the stretch with the most change. The first version always returned the whole signal, because change is never negative. Centering it on the signal's own average fixed that, and a test now guards it.</p>
+      <div class="multiples" id="multiples"></div>
+    </section>
+
+    <section class="q-wrap q-section">
+      <h2 class="q-h2">Written from scratch.</h2>
+      <div class="q-steps">
+        <div class="q-step"><h3 class="q-h3">Divide and conquer</h3><p>Pick a pivot, split the set at the median distance to it, recurse until clusters are small or tight. Seeded, so runs repeat.</p></div>
+        <div class="q-step"><h3 class="q-h3">Closest pair</h3><p>Inside each cluster, the two most similar segments, a quick check that clusters hold real look-alikes.</p></div>
+        <div class="q-step"><h3 class="q-h3">Kadane</h3><p>Linear-time maximum subarray over centered activity, marking the busiest stretch of each segment.</p></div>
+        <div class="q-step"><h3 class="q-h3">DTW and correlation</h3><p>Two distances, with an optional warping window for dynamic time warping.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="q-foot">
+    <div class="q-wrap">
+      <span>Pulse Clusters · Mostafa Amer · Data derived from PulseDB plus synthetic signals</span>
+      <a href="https://github.com/mostafaamer1234/unsupervised-clustering-of-time-series-segments">Source on GitHub</a>
+    </div>
+  </footer>
+  <script src="about.js"></script>
+</body>
+</html>
